@@ -1,0 +1,211 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+// 1. User Management & Authentication
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendorProfile VendorProfile?
+  orders        Order[]        @relation("CustomerOrders")
+  comments      Comment[]
+
+  @@map("users")
+}
+
+// 2. (Multi-Vendor Backbone) 
+model VendorProfile {
+  id          String   @id @default(uuid())
+  storeName   String   @unique
+  description String?
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  products  Product[]
+  orders    Order[]    @relation("VendorOrders")
+  purchases Purchase[]
+
+  @@map("vendor_profiles")
+}
+
+// 3. Products, Categories, and Brands
+model Category {
+  id       Int        @id @default(autoincrement())
+  name     String
+  parentId Int?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vendorId String
+  vendor   VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  brandId Int?
+  brand   Brand? @relation(fields: [brandId], references: [id])
+
+  orderItems OrderItem[]
+  purchases  Purchase[]
+
+  @@map("products")
+}
+
+// 4. Ordering & Purchase Management
+model Order {
+  id          String      @id @default(uuid())
+  totalAmount Decimal     @db.Decimal(10, 2)
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  customerId String
+  customer   User   @relation("CustomerOrders", fields: [customerId], references: [id])
+
+  vendorId String
+  vendor   VendorProfile @relation("VendorOrders", fields: [vendorId], references: [id])
+
+  orderItems OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id       String  @id @default(uuid())
+  quantity Int
+  price    Decimal @db.Decimal(10, 2)
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Purchase {
+  id          Int     @id @default(autoincrement())
+  totalAmount Decimal @db.Decimal(10, 2)
+  status      String  @default("PENDING")
+
+  vendorId String
+  vendor   VendorProfile @relation(fields: [vendorId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("purchases")
+}
+
+// 5. CMS (Blogs & Comments)
+model BlogAuthor {
+  id    Int    @id @default(autoincrement())
+  name  String
+  blogs Blog[]
+
+  @@map("blog_authors")
+}
+
+model BlogCategory {
+  id    Int    @id @default(autoincrement())
+  name  String
+  blogs Blog[]
+
+  @@map("blog_categories")
+}
+
+model Blog {
+  id         Int    @id @default(autoincrement())
+  title      String
+  content    String
+  authorId   Int
+  author     BlogAuthor @relation(fields: [authorId], references: [id])
+  categoryId Int
+  category   BlogCategory @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+
+  @@map("blogs")
+}
+
+model Comment {
+  id      Int    @id @default(autoincrement())
+  content String
+
+  blogId Int
+  blog   Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}
+
+// 6. (Website Configs & Banners for Home Page Editing)
+model WebsiteConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  valueJson Json
+  updatedAt DateTime @updatedAt
+
+  @@map("website_configs")
+}
+
+model Banner {
+  id       Int    @id @default(autoincrement())
+  title    String
+  imageUrl String
+  pageName String
+
+  @@map("banners")
+}
