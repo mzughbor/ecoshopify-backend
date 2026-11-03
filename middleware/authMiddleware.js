@@ -1,7 +1,5 @@
-const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const { verifyToken } = require('../lib/auth');
 
 async function protect(req, res, next) {
   const authHeader = req.headers.authorization || '';
@@ -12,7 +10,7 @@ async function protect(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyToken(token);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: { vendorProfile: true },
@@ -22,6 +20,7 @@ async function protect(req, res, next) {
       return res.status(401).json({ message: 'User not found' });
     }
 
+    // Role always comes from the DB, never from the token payload.
     req.user = {
       id: user.id,
       name: user.name,
@@ -36,4 +35,25 @@ async function protect(req, res, next) {
   }
 }
 
-module.exports = { protect };
+const authorize = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ message: `${roles.join(' or ')} access required` });
+  }
+  return next();
+};
+
+const admin = authorize('ADMIN');
+const adminOrVendor = authorize('ADMIN', 'VENDOR');
+
+// Vendors may only sell once an admin approved their store.
+const approvedVendor = (req, res, next) => {
+  if (req.user?.role !== 'VENDOR') {
+    return res.status(403).json({ message: 'VENDOR access required' });
+  }
+  if (!req.user.vendorProfile?.isApproved) {
+    return res.status(403).json({ message: 'Your store is awaiting admin approval' });
+  }
+  return next();
+};
+
+module.exports = { protect, authorize, admin, adminOrVendor, approvedVendor };
