@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_NAME="${DB_NAME:-echoshopify_db}"
-DB_USER="${DB_USER:-malex_user}"
+DB_NAME="${DB_NAME:-ecoshopify_db}"
+DB_USER="${DB_USER:-ecoshopify_user}"
 DB_PASSWORD="${DB_PASSWORD:-change-me-strong-password}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"

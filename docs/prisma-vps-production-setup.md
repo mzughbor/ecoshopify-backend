@@ -35,19 +35,19 @@ sudo -u postgres psql
 Inside the PostgreSQL shell:
 
 ```sql
-CREATE ROLE malex_user WITH LOGIN PASSWORD 'replace_with_strong_password';
-CREATE DATABASE echoshopify_db OWNER malex_user;
-GRANT ALL PRIVILEGES ON DATABASE echoshopify_db TO malex_user;
+CREATE ROLE ecoshopify_user WITH LOGIN PASSWORD 'replace_with_strong_password';
+CREATE DATABASE ecoshopify_db OWNER ecoshopify_user;
+GRANT ALL PRIVILEGES ON DATABASE ecoshopify_db TO ecoshopify_user;
 \q
 ```
 
 If the database already exists, repair ownership like this:
 
 ```bash
-sudo -u postgres psql -d echoshopify_db -c "ALTER DATABASE echoshopify_db OWNER TO malex_user;"
-sudo -u postgres psql -d echoshopify_db -c "GRANT ALL PRIVILEGES ON DATABASE echoshopify_db TO malex_user;"
-sudo -u postgres psql -d echoshopify_db -c "GRANT ALL ON SCHEMA public TO malex_user;"
-sudo -u postgres psql -d echoshopify_db -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO malex_user;"
+sudo -u postgres psql -d ecoshopify_db -c "ALTER DATABASE ecoshopify_db OWNER TO ecoshopify_user;"
+sudo -u postgres psql -d ecoshopify_db -c "GRANT ALL PRIVILEGES ON DATABASE ecoshopify_db TO ecoshopify_user;"
+sudo -u postgres psql -d ecoshopify_db -c "GRANT ALL ON SCHEMA public TO ecoshopify_user;"
+sudo -u postgres psql -d ecoshopify_db -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ecoshopify_user;"
 ```
 
 Important: the Prisma app user must have CREATE privileges on the target schema. Without that, Prisma will fail with errors like:
@@ -188,10 +188,10 @@ If it works, the Prisma schema was created successfully and the app can write to
 The shortest working fix for a broken local Prisma setup is:
 
 ```bash
-sudo -u postgres psql -c "CREATE ROLE malex_user WITH LOGIN PASSWORD 'strong-password';"
-sudo -u postgres psql -d postgres -c "CREATE DATABASE echoshopify_db OWNER malex_user;"
-sudo -u postgres psql -d echoshopify_db -c "GRANT ALL PRIVILEGES ON DATABASE echoshopify_db TO malex_user;"
-sudo -u postgres psql -d echoshopify_db -c "GRANT ALL ON SCHEMA public TO malex_user;"
+sudo -u postgres psql -c "CREATE ROLE ecoshopify_user WITH LOGIN PASSWORD 'strong-password';"
+sudo -u postgres psql -d postgres -c "CREATE DATABASE ecoshopify_db OWNER ecoshopify_user;"
+sudo -u postgres psql -d ecoshopify_db -c "GRANT ALL PRIVILEGES ON DATABASE ecoshopify_db TO ecoshopify_user;"
+sudo -u postgres psql -d ecoshopify_db -c "GRANT ALL ON SCHEMA public TO ecoshopify_user;"
 cd /path/to/ecoshopfiy-backend
 npx prisma db push
 ```
@@ -205,7 +205,7 @@ If Prisma still says the table is missing, confirm the database user owns the da
 Run:
 
 ```bash
-sudo -u postgres psql -d echoshopify_db -c "ALTER DATABASE echoshopify_db OWNER TO malex_user;"
+sudo -u postgres psql -d ecoshopify_db -c "ALTER DATABASE ecoshopify_db OWNER TO ecoshopify_user;"
 ```
 
 ### Table does not exist
