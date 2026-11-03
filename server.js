@@ -1,3 +1,9 @@
+const allowedOrigins = [
+  "https://ecoshopify.com",
+  "https://www.ecoshopify.com"
+];
+
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
